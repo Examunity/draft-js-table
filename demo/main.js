@@ -3,6 +3,7 @@ const React = require('react');
 const Immutable = require('immutable');
 const ReactDOM = require('react-dom');
 const TableUtils = require('../')
+const NewTableMatrix = require('../lib/NewTableMatrix');
 
 const {
     Editor,
@@ -205,10 +206,9 @@ const BlockStyleControls = (props) => {
         .getBlockForKey(selection.getStartKey())
         .getType();
 
-    function onInsertTable(e) {
-        e.preventDefault();
+    function onInsertTable(row, col) {
         props.onChange(
-            TableUtils.insertTable(editorState)
+            TableUtils.insertTable(editorState, row, col)
         );
     }
 
@@ -223,7 +223,7 @@ const BlockStyleControls = (props) => {
                     style={type.style}
                 />
             )}
-            <span className={'RichEditor-styleButton'} onMouseDown={onInsertTable}>Insert Table</span>
+            <InsertTable className={'RichEditor-styleButton'} onMouseDown={onInsertTable}>Insert Table</InsertTable>
         </div>
     );
 };
@@ -252,18 +252,52 @@ const InlineStyleControls = (props) => {
     );
 };
 
+class InsertTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { menuOpen: false };
+  }
+
+  _newTable(row, col) {
+    this.props.onMouseDown(row, col);
+    this.setState({ menuOpen: false });
+  }
+
+  toggle() {
+    this.setState({ menuOpen: true });
+  }
+
+  render() {
+    return (
+      <div className={this.props.className} style={{position: 'relative', display: 'inline-block'}}>
+        <span onClick={this.toggle.bind(this)}>{this.props.children}</span>
+        {this.state.menuOpen && <NewTableMatrix newTable={this._newTable.bind(this)} />}
+      </div>
+    );
+  }
+}
+
 class TableControls extends React.Component {
     constructor(props) {
         super(props);
 
         this.onInsertRow = this._onInsertRow.bind(this);
         this.onInsertColumn = this._onInsertColumn.bind(this);
+        this.onRemoveRow = this._onRemoveRow.bind(this);
+        this.onRemoveColumn = this._onRemoveColumn.bind(this);
     }
 
     _onInsertRow(e) {
         e.preventDefault();
         this.props.onChange(
             TableUtils.insertRow(this.props.editorState)
+        );
+    }
+
+    _onRemoveRow(e) {
+        e.preventDefault();
+        this.props.onChange(
+            TableUtils.removeRow(this.props.editorState)
         );
     }
 
@@ -274,11 +308,20 @@ class TableControls extends React.Component {
         );
     }
 
+    _onRemoveColumn(e) {
+        e.preventDefault();
+        this.props.onChange(
+            TableUtils.removeColumn(this.props.editorState)
+        );
+    }
+
     render() {
         return (
                 <div className="RichEditor-controls">
                     <span className={'RichEditor-styleButton'} onMouseDown={this.onInsertRow}>Insert Row</span>
                     <span className={'RichEditor-styleButton'} onMouseDown={this.onInsertColumn}>Insert Column</span>
+                    <span className={'RichEditor-styleButton'} onMouseDown={this.onRemoveRow}>Remove Row</span>
+                    <span className={'RichEditor-styleButton'} onMouseDown={this.onRemoveColumn}>Remove Column</span>
                 </div>
             );
     }
